@@ -5,7 +5,7 @@ This tool is meant to be used to clean AIS data in a machine learning pipeline. 
 
 ### Usage
 
-Run this script from the command line by command `python3 wrangle_script.py \<filepath\>`. Filepath is the path to the file to be wrangled
+Run this script from the command line by command `python3 wrangle_script.py <filepath>`. Filepath is the path to the file to be wrangled
 
 This script expects that the dataframe will have columns named 'id', 'lat', 'lon' and 't'
 
@@ -25,5 +25,5 @@ Download dataset from https://zenodo.org/record/3754481
 
 Use script with command 
 
-`python3 wrangle_script.py \<filepath\> --id shipid`
+`python3 wrangle_script.py <filepath> --id shipid`
 
