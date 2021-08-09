@@ -13,7 +13,7 @@ If the columns are named differently you can input the alternative names using -
 
 So for example if the dataframe would have id in a column called mmsi you would run the script with
 
-`python3 wrangle_script.py \<filepath\> --id mmsi`
+`python3 wrangle_script.py <filepath> --id mmsi`
 
 Also flags -b and -f are used to further wrangle the data. Flag -b calculates the bearing in each point and -f flag does not remove the outliers from the data and instead imputs values using rolling average method.
 
@@ -21,9 +21,9 @@ Also flags -b and -f are used to further wrangle the data. Flag -b calculates th
 ### Example use
 
 
-Download dataset from https://zenodo.org/record/3754481
+Download dataset from https://zenodo.org/record/3754481 and unzip the file 'ais.csv' to project root
 
 Use script with command 
 
-`python3 wrangle_script.py <filepath> --id shipid`
+`python3 wrangle_script.py ais.csv --id shipid`
 
