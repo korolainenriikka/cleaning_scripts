@@ -5,6 +5,7 @@ from pandas.api.types import is_numeric_dtype, is_datetime64_any_dtype
 import sys
 import argparse
 import matplotlib.pyplot as plt
+import mlflow
 
 def calculate_statistics(df):
     print("+++ CALCULATING STATISTICS +++")
@@ -34,7 +35,8 @@ def calculate_statistics(df):
     b = np.array(lon_in_top_bin).T
     ax1.scatter(a[0], a[1]*100, color="red")
     ax2.scatter(b[0], b[1]*100, color="blue")
-    plt.show()
+    #plt.show()
+    mlflow.log_artifact(plt)
 
 def wrangle_dataset(filepath, id='id', lon='lon', lat='lat', time='t', fix=False, bearing=False):
     # Load dataframe
@@ -119,18 +121,25 @@ def wrangle_dataset(filepath, id='id', lon='lon', lat='lat', time='t', fix=False
     print("---DONE---")
     return df
 
-parser = argparse.ArgumentParser(description="Tool for data wrangling")
-parser.add_argument('filepath', help='filepath of data to be processed')
-parser.add_argument('-i','--id', help='name of id column if other than "id"', default='id')
-parser.add_argument('-x','--lon', help='name of lon column if other than "lon"', default='lon')
-parser.add_argument('-y','--lat', help='name of lat column if other than "lat"',default='lat')
-parser.add_argument('-t','--time', help='name of time column if other than "time"', default='t')
-parser.add_argument('-f','--fix', help='use flag to fix outlier values using rolling average', default=False, action="store_true")
-parser.add_argument('-b', '--bearing', help='use flag to calculate bearing', default=False, action="store_true")
-parser.add_argument('-s', '--statistics', help='use flag to calculate statistics', default=False, action="store_true")
-args=vars(parser.parse_args())
-statistics = args.pop('statistics')
-df = wrangle_dataset(**args)
-if statistics:
-    calculate_statistics(df)
-df.to_csv("out_" + args['filepath'])
+def main():
+    with mlflow.start_run():
+        parser = argparse.ArgumentParser(description="Tool for data wrangling")
+        parser.add_argument('filepath', help='filepath of data to be processed')
+        parser.add_argument('-i','--id', help='name of id column if other than "id"', default='id')
+        parser.add_argument('-x','--lon', help='name of lon column if other than "lon"', default='lon')
+        parser.add_argument('-y','--lat', help='name of lat column if other than "lat"',default='lat')
+        parser.add_argument('-t','--time', help='name of time column if other than "time"', default='t')
+        parser.add_argument('-f','--fix', help='use flag to fix outlier values using rolling average', default=False, action="store_true")
+        parser.add_argument('-b', '--bearing', help='use flag to calculate bearing', default=False, action="store_true")
+        parser.add_argument('-s', '--statistics', help='use flag to calculate statistics', default=False, action="store_true")
+        args=vars(parser.parse_args())
+        statistics = args.pop('statistics')
+        df = wrangle_dataset(**args)
+        if statistics:
+            calculate_statistics(df)
+        df.to_csv("out_" + args['filepath'])
+        mlflow.log_metric('derp', 1)
+
+if __name__ == '__main__':
+    main()
+
