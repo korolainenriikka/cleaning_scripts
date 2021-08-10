@@ -7,6 +7,7 @@ import argparse
 import matplotlib.pyplot as plt
 import logging
 from configparser import ConfigParser
+import mlflow
 
 
 def calculate_statistics(old_df, new_df):
@@ -47,7 +48,8 @@ def show_percentage_of_rows_with_zero_diff_per_leg(df, groupby_id, title):
     b = np.array(lon_in_top_bin).T
     ax1.scatter(a[0], a[1]*100, color="red")
     ax2.scatter(b[0], b[1]*100, color="blue")
-    plt.show()
+    #plt.show()
+    mlflow.log_artifact(plt)
 
 def load_dataset():
     '''Loads the dataset. Then removes all id/time dublicates and rows with missing coordinates. Return dataframe with renamed columns '''
@@ -160,20 +162,26 @@ def wrangle_dataset(df):
     logging.info("---DONE---")
     return df
 
-parser = argparse.ArgumentParser(description="Tool for data wrangling")
-parser.add_argument('-v', '--verbose', help = 'show program output', default=False, action="store_true")
-parser.add_argument('-s', '--statistics', help='calculate statistics on the transformation', default=False, action="store_true")
 
-config_object = ConfigParser()
-config_object.read("config.ini")
-cli_args=vars(parser.parse_args())
-if cli_args['verbose']:
-    logging.basicConfig(level=logging.DEBUG)
+def main():
+    with mlflow.start_run():
+        parser = argparse.ArgumentParser(description="Tool for data wrangling")
+        parser.add_argument('-v', '--verbose', help = 'show program output', default=False, action="store_true")
+        parser.add_argument('-s', '--statistics', help='calculate statistics on the transformation', default=False, action="store_true")
 
-raw_dataframe = load_dataset()
+        config_object = ConfigParser()
+        config_object.read("config.ini")
+        cli_args=vars(parser.parse_args())
+        if cli_args['verbose']:
+            logging.basicConfig(level=logging.DEBUG)
 
-fixed_dataframe = wrangle_dataset(raw_dataframe)
+        raw_dataframe = load_dataset()
 
-if cli_args['statistics']:
-    calculate_statistics(raw_dataframe, fixed_dataframe)
-fixed_dataframe.to_csv("out_" + config_object['DATAFRAME']['filepath'])
+        fixed_dataframe = wrangle_dataset(raw_dataframe)
+
+        if cli_args['statistics']:
+            calculate_statistics(raw_dataframe, fixed_dataframe)
+        fixed_dataframe.to_csv("out_" + config_object['DATAFRAME']['filepath'])
+
+if __name__ == '__main__':
+    main()
