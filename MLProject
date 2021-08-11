@@ -5,4 +5,4 @@ docker_env:
 
 entry_points:
   main:
-    command: "python3 wrangle_script.py ais.csv --id shipid --statistics"
+    command: "python3 wrangle_script.py"

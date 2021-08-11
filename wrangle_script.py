@@ -51,15 +51,15 @@ def show_percentage_of_rows_with_zero_diff_per_leg(df, groupby_id, title):
     #plt.show()
     mlflow.log_artifact(plt)
 
-def load_dataset():
-    '''Loads the dataset. Then removes all id/time dublicates and rows with missing coordinates. Return dataframe with renamed columns '''
+def load_dataset(config_object):
+    '''Loads the dataset. Then removes all id/time duplicates and rows with missing coordinates. Return dataframe with renamed columns '''
     dataframe_args = dict(config_object['DATAFRAME'])
     filepath, id_column, lon_column, lat_column, time_column = dataframe_args.values()
     logging.info("+++ START +++\n+++ READING DATAFRAME FROM FILE +++")
     df = pd.read_csv(filepath)
     original_length = len(df)
     logging.info("+++ ORIGINAL LENGTH: " + str(original_length) + "+++\n")
-    logging.info("+++ DROPPING ID/TIME DUBLICATES +++")
+    logging.info("+++ DROPPING ID/TIME DUPLICATES +++")
     df = df.drop_duplicates([time_column, id_column])
     prev_len = len(df)
     logging.info("+++ ROWS DROPPED: " + str(original_length-prev_len) + "+++\n")
@@ -72,7 +72,7 @@ def load_dataset():
     logging.info("+++ ROWS DROPPED:" + str(prev_len-len(df)) + "+++\n")
     return df
 
-def drop_small_legs(df):
+def drop_small_legs(df, config_object):
     ''' If timedelta between two measurements is more than the threshold defined in config file  '''
     interm = df[(df.timedelta > int(config_object['WRANGLING']['leg_gap'])) | df.timedelta.isna()].reset_index()['index']
     df['leg_num'] = pd.Series(interm.index, index=interm)
@@ -83,7 +83,7 @@ def drop_small_legs(df):
     logging.info("+++ ROWS DROPPED: " + str(prev_len-len(df)) + " +++\n")
     return df
 
-def fix_values(df):
+def fix_values(df, config_object):
     if bool(config_object['WRANGLING']['fix_values']):
         ship_legs = df.groupby('leg_num')
         logging.info("+++ FIXING SPEED VALUES OUTLIERS +++")
@@ -136,7 +136,7 @@ def calculate_speed(df):
     df['speed'] = ships.timedelta.apply(calculate_speed_aux)
     return df
 
-def wrangle_dataset(df):
+def wrangle_dataset(df, config_object):
     # Bearing calculation function
     def calculate_bearing(lat):
         dlon = np.absolute(df.loc[lat.index, 'lon'] - df.loc[lat.index, 'lon_prev'])
@@ -148,12 +148,12 @@ def wrangle_dataset(df):
     # Calculate timedeltas
     df = timedelta(df)
     # Differentiate the legs
-    df = drop_small_legs(df)
+    df = drop_small_legs(df, config_object)
     # Remove rows where the speed is above limit
     
     df = calculate_speed(df)
 
-    df = fix_values(df)
+    df = fix_values(df, config_object)
     '''
     if bearing:
         df['bearing'] = df.groupby('leg_num')['lat'].apply(calculate_bearing)
@@ -175,9 +175,9 @@ def main():
         if cli_args['verbose']:
             logging.basicConfig(level=logging.DEBUG)
 
-        raw_dataframe = load_dataset()
+        raw_dataframe = load_dataset(config_object)
 
-        fixed_dataframe = wrangle_dataset(raw_dataframe)
+        fixed_dataframe = wrangle_dataset(raw_dataframe, config_object=config_object)
 
         if cli_args['statistics']:
             calculate_statistics(raw_dataframe, fixed_dataframe)
