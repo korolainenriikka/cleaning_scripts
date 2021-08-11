@@ -1,7 +1,11 @@
-def load_dataset(config_object):
+import logging
+import pandas as pd
+
+# step params to parse: filepath, id_column, lon_column, lat_column, time_column
+# then: load data into artifacts
+
+def load_dataset():
     '''Loads the dataset. Then removes all id/time duplicates and rows with missing coordinates. Return dataframe with renamed columns '''
-    dataframe_args = dict(config_object['DATAFRAME'])
-    filepath, id_column, lon_column, lat_column, time_column = dataframe_args.values()
     logging.info("+++ START +++\n+++ READING DATAFRAME FROM FILE +++")
     df = pd.read_csv(filepath)
     original_length = len(df)
@@ -18,4 +22,3 @@ def load_dataset(config_object):
     df = df.dropna(subset=['lon', 'lat'], how='any')
     logging.info("+++ ROWS DROPPED:" + str(prev_len-len(df)) + "+++\n")
     return df
-    

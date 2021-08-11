@@ -1,16 +1,23 @@
-def drop_small_legs(df, config_object):
+import logging
+import numpy as np
+import pandas as pd
+from pandas.api.types import is_numeric_dtype, is_datetime64_any_dtype
+
+
+def drop_small_legs(df, leg_gap, min_rows):
     ''' If timedelta between two measurements is more than the threshold defined in config file  '''
-    interm = df[(df.timedelta > int(config_object['WRANGLING']['leg_gap'])) | df.timedelta.isna()].reset_index()['index']
+    interm = df[(df.timedelta > leg_gap) | df.timedelta.isna()].reset_index()['index']
     df['leg_num'] = pd.Series(interm.index, index=interm)
     df['leg_num'] = df.groupby('id').leg_num.fillna(method='ffill')
-    logging.info("+++ DROPPING SHIPS THAT HAVE FEWER THAN " + config_object['WRANGLING']['min_rows'] + " MEASUREMENTS +++")
+    logging.info("+++ DROPPING SHIPS THAT HAVE FEWER THAN " + min_rows + " MEASUREMENTS +++")
     prev_len = len(df)
-    df = df[df.groupby('id')['id'].transform('size')>int(config_object['WRANGLING']['min_rows'])]
+    df = df[df.groupby('id')['id'].transform('size') > min_rows]
     logging.info("+++ ROWS DROPPED: " + str(prev_len-len(df)) + " +++\n")
     return df
 
-def fix_values(df, config_object):
-    if bool(config_object['WRANGLING']['fix_values']):
+
+def fix_values(df, max_speed, fix_values_bool):
+    if fix_values_bool:
         ship_legs = df.groupby('leg_num')
         logging.info("+++ FIXING SPEED VALUES OUTLIERS +++")
         df.lon = np.where(df['speed']>25, np.nan, df.lon)
@@ -23,8 +30,9 @@ def fix_values(df, config_object):
         return df
     else:
         logging.info("+++ DROPPING SPEED VALUE OUTLIERS +++")
-        df = df[df['speed']<int(config_object['WRANGLING']['max_speed'])]
+        df = df[df['speed'] < max_speed]
         return df
+
 
 def timedelta(df):
     '''Method for calculating the timedelta between each entry within a ship'''
@@ -36,12 +44,13 @@ def timedelta(df):
     else: 
         # Change time to datetime if not already in this format
         if not is_datetime64_any_dtype(df['t']):
-            df['t'] = df['t'].apply(lambda x: dp.parse(x))
+            df['t'] = df['t'].apply(lambda x: df.parse(x))
         # Sort values by timestamp
         df = df.sort_values('t')
         ships  = df.groupby('id')
         df['timedelta'] = ships['t'].diff().transform(lambda x: abs(x.total_seconds()))
     return df
+
 
 def calculate_speed(df):
     '''Calculate speed using timedeltas and haversine distance between two points. Uses auxiliarry calculate_speed function for fast axis wise application'''
@@ -62,7 +71,8 @@ def calculate_speed(df):
     df['speed'] = ships.timedelta.apply(calculate_speed_aux)
     return df
 
-def wrangle_dataset(df, config_object):
+
+def wrangle_dataset():
     # Bearing calculation function
     def calculate_bearing(lat):
         dlon = np.absolute(df.loc[lat.index, 'lon'] - df.loc[lat.index, 'lon_prev'])
@@ -70,16 +80,27 @@ def wrangle_dataset(df, config_object):
         Y = np.cos(lat) * np.sin(df.loc[lat.index, 'lat_prev']) - np.sin(lat) * np.cos(df.loc[lat.index, 'lat_prev']) * np.cos(dlon)
         return np.degrees(np.arctan2(X,Y))
 
+    # TODO: read dataframe from artifacts store
+    # read params from mlflow run command
+
+    df = pd.DataFrame()
+
+    min_rows = 20
+    max_speed = 25
+    leg_gap = 1800
+    fix_values_param = 0
+    fix_values_bool = bool(fix_values_param)
+
     original_length=len(df)
     # Calculate timedeltas
     df = timedelta(df)
     # Differentiate the legs
-    df = drop_small_legs(df, config_object)
+    df = drop_small_legs(df)
     # Remove rows where the speed is above limit
     
     df = calculate_speed(df)
 
-    df = fix_values(df, config_object)
+    df = fix_values(df, fix_values_bool)
     '''
     if bearing:
         df['bearing'] = df.groupby('leg_num')['lat'].apply(calculate_bearing)

@@ -1,4 +1,10 @@
+import mlflow
+import numpy as np
+import matplotlib as plt
+
+
 def calculate_statistics(old_df, new_df):
+    # read old and new dfs from artifacts!
     print("+++ CALCULATING STATISTICS +++")
     print("+++ ORIGINAL DATAFRAME +++")
     print(old_df.describe())
@@ -7,6 +13,7 @@ def calculate_statistics(old_df, new_df):
     show_percentage_of_rows_with_zero_diff_per_leg(old_df, 'id', "Raw dataframe groupby id")
     show_percentage_of_rows_with_zero_diff_per_leg(new_df, 'id', "Wrangled dataframe groupby id")
     show_percentage_of_rows_with_zero_diff_per_leg(new_df, 'leg_num', 'Wrangled dataframe groupby leg id')
+
 
 def show_percentage_of_rows_with_zero_diff_per_leg(df, groupby_id, title):
     df = df.sort_values('t')

@@ -3,5 +3,32 @@ name: ais_wrangling
 conda_env: conda.yaml
 
 entry_points:
+  load_data:
+    parameters:
+      filepath: string
+      id_column: string
+      lon_column: string
+      lat_column: string
+      time_column: string
+    command: "python load_data.py --filepath {filepath} 
+      --id_column {id_column} --lon_column {lon_column} 
+      --lat_column {lat_column} --time_column {time_column}"
+
+  wrangle_data:
+    parameters:
+      data_location: path
+      min_rows: float
+      max_speed: float
+      leg_gap: float
+      fix_values: string
+    command: "python wrangle_data.py --data_location {data_location}
+      --min_rows {min_rows} --max_speed {max_speed}
+      --leg_gap {leg_gap} --fix_values {fix_values}"
+
+  calculate_statistics:
+    parameters:
+      data_location: path
+    command: "python calculate_statistics.py"
+
   main:
-    command: "python3 wrangle_script.py"
+    command: "python3 main.py"
