@@ -1,9 +1,18 @@
 import mlflow
 import numpy as np
+import pandas as pd
 import matplotlib as plt
+import os
+import click
 
 
-def calculate_statistics(old_df, new_df):
+@click.command()
+@click.option('--raw_data_location')
+@click.option('--wrangled_data_location')
+def calculate_statistics(raw_data_location, wrangled_data_location):
+    old_df = np.genfromtxt(os.path.join(raw_data_location, 'raw_data.txt'))
+    new_df = pd.read_csv(os.path.join(wrangled_data_location, 'out.csv'))
+
     # read old and new dfs from artifacts!
     print("+++ CALCULATING STATISTICS +++")
     print("+++ ORIGINAL DATAFRAME +++")

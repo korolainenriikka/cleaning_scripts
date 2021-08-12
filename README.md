@@ -30,3 +30,9 @@ Use script with command
 
 If using a different dataset change the `config.ini` file accordingly
 
+
+### The mlflow adaptation
+
+todo:
+append statistics generation into the pipeline
+log wrangle script output metrics as mlflow metrics

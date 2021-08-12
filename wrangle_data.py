@@ -1,7 +1,11 @@
 import logging
 import numpy as np
 import pandas as pd
+import dateutil.parser as dp
 from pandas.api.types import is_numeric_dtype, is_datetime64_any_dtype
+import click
+import os
+import mlflow
 
 
 def drop_small_legs(df, leg_gap, min_rows):
@@ -9,14 +13,14 @@ def drop_small_legs(df, leg_gap, min_rows):
     interm = df[(df.timedelta > leg_gap) | df.timedelta.isna()].reset_index()['index']
     df['leg_num'] = pd.Series(interm.index, index=interm)
     df['leg_num'] = df.groupby('id').leg_num.fillna(method='ffill')
-    logging.info("+++ DROPPING SHIPS THAT HAVE FEWER THAN " + min_rows + " MEASUREMENTS +++")
+    logging.info("+++ DROPPING SHIPS THAT HAVE FEWER THAN " + str(min_rows) + " MEASUREMENTS +++")
     prev_len = len(df)
     df = df[df.groupby('id')['id'].transform('size') > min_rows]
     logging.info("+++ ROWS DROPPED: " + str(prev_len-len(df)) + " +++\n")
     return df
 
 
-def fix_values(df, max_speed, fix_values_bool):
+def fix_values_func(df, max_speed, fix_values_bool):
     if fix_values_bool:
         ship_legs = df.groupby('leg_num')
         logging.info("+++ FIXING SPEED VALUES OUTLIERS +++")
@@ -44,7 +48,7 @@ def timedelta(df):
     else: 
         # Change time to datetime if not already in this format
         if not is_datetime64_any_dtype(df['t']):
-            df['t'] = df['t'].apply(lambda x: df.parse(x))
+            df['t'] = df['t'].apply(lambda x: dp.parse(x))
         # Sort values by timestamp
         df = df.sort_values('t')
         ships  = df.groupby('id')
@@ -72,39 +76,50 @@ def calculate_speed(df):
     return df
 
 
-def wrangle_dataset():
-    # Bearing calculation function
-    def calculate_bearing(lat):
-        dlon = np.absolute(df.loc[lat.index, 'lon'] - df.loc[lat.index, 'lon_prev'])
-        X = np.cos(df.loc[lat.index, 'lat_prev'])* np.sin(dlon)
-        Y = np.cos(lat) * np.sin(df.loc[lat.index, 'lat_prev']) - np.sin(lat) * np.cos(df.loc[lat.index, 'lat_prev']) * np.cos(dlon)
-        return np.degrees(np.arctan2(X,Y))
+@click.command()
+@click.option('--data_location')
+@click.option('--min_rows')
+@click.option('--max_speed')
+@click.option('--leg_gap')
+@click.option('--fix_values')
+def wrangle_dataset(data_location, min_rows, max_speed, leg_gap, fix_values):
+    with mlflow.start_run(): 
+        # Bearing calculation function
+        def calculate_bearing(lat):
+            dlon = np.absolute(df.loc[lat.index, 'lon'] - df.loc[lat.index, 'lon_prev'])
+            X = np.cos(df.loc[lat.index, 'lat_prev'])* np.sin(dlon)
+            Y = np.cos(lat) * np.sin(df.loc[lat.index, 'lat_prev']) - np.sin(lat) * np.cos(df.loc[lat.index, 'lat_prev']) * np.cos(dlon)
+            return np.degrees(np.arctan2(X,Y))
 
-    # TODO: read dataframe from artifacts store
-    # read params from mlflow run command
+        #convert params to ints & flag to bool
+        min_rows = int(min_rows)
+        max_speed = int(max_speed)
+        leg_gap = int(leg_gap)
+        fix_values_bool = bool(fix_values)
 
-    df = pd.DataFrame()
+        df = pd.read_csv(os.path.join(data_location, 'raw_data.csv'))
 
-    min_rows = 20
-    max_speed = 25
-    leg_gap = 1800
-    fix_values_param = 0
-    fix_values_bool = bool(fix_values_param)
+        original_length=len(df)
+        # Calculate timedeltas
+        df = timedelta(df)
+        # Differentiate the legs
+        df = drop_small_legs(df, leg_gap, min_rows)
+        #fails before this!
+        # Remove rows where the speed is above limit
+        
+        df = calculate_speed(df)
 
-    original_length=len(df)
-    # Calculate timedeltas
-    df = timedelta(df)
-    # Differentiate the legs
-    df = drop_small_legs(df)
-    # Remove rows where the speed is above limit
-    
-    df = calculate_speed(df)
+        df = fix_values_func(df, max_speed,  fix_values_bool)
+        '''
+        if bearing:
+            df['bearing'] = df.groupby('leg_num')['lat'].apply(calculate_bearing)
+        '''
+        logging.info("+++ TOTAL ROWS DROPPED: " + str(original_length-len(df)) + " +++")
+        logging.info("---DONE---")
 
-    df = fix_values(df, fix_values_bool)
-    '''
-    if bearing:
-        df['bearing'] = df.groupby('leg_num')['lat'].apply(calculate_bearing)
-    '''
-    logging.info("+++ TOTAL ROWS DROPPED: " + str(original_length-len(df)) + " +++")
-    logging.info("---DONE---")
-    return df
+        df.to_csv('out.csv')
+        mlflow.log_artifact('out.csv')
+
+
+if __name__ == '__main__':
+    wrangle_dataset()

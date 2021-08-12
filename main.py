@@ -39,7 +39,7 @@ def main():
         min_rows, max_speed, leg_gap, fix_values = wrangling_args.values()
 
         # note on params: mlflow has no boolean param so 0 is false 1 is true
-        submitted_wrangle_data = run_step('wrangle_dataset', parameters={
+        submitted_wrangle_data = run_step('wrangle_data', parameters={
             'data_location': data_location,
             'min_rows': min_rows,
             'max_speed': max_speed,
