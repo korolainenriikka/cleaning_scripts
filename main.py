@@ -2,6 +2,7 @@ import mlflow
 import logging
 from configparser import ConfigParser
 import argparse
+import os
 
 
 def run_step(entrypoint, parameters=None):
@@ -48,9 +49,17 @@ def main():
         })
         wrangled_location = submitted_wrangle_data.info.artifact_uri
 
-
         run_step('calculate_statistics', parameters={'raw_data_location': data_location, 'wrangled_data_location': wrangled_location})
         print('workflow finished.')
+
+        # The only way to log something as an artifact is to first write it into a file
+        # in project root and copy it to artifacts. This removes the duplicate files.
+        print('Deleting duplicates of files written to artifacts...')
+        files_written = ['raw_data.csv', 'out.csv', 'Wrangled_dataframe_groupby_id.png', 'Raw_dataframe_groupby_id.png', 'Wrangled_dataframe_groupby_leg_id.png']
+        for file in files_written:
+            os.remove(file)
+        print('Finished.')
+        
 
 if __name__ == '__main__':
     main()
