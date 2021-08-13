@@ -1,8 +1,0 @@
-name: ais_wrangling
-
-docker_env:
-  image: ais_wrangling
-
-entry_points:
-  main:
-    command: "python3 wrangle_script.py ais.csv --id shipid --statistics"

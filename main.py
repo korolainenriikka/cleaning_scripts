@@ -48,11 +48,9 @@ def main():
         })
         wrangled_location = submitted_wrangle_data.info.artifact_uri
 
-        if cli_args['statistics']:
-            run_step('calculate_statistics', parameters={'raw_data_location': data_location, 'wrangled_data_location': wrangled_location})
 
-        # TODO: read from wrangled location the df and then run the following with that
-        #fixed_dataframe.to_csv("out_" + config_object['DATAFRAME']['filepath'])
+        run_step('calculate_statistics', parameters={'raw_data_location': data_location, 'wrangled_data_location': wrangled_location})
+        print('workflow finished.')
 
 if __name__ == '__main__':
     main()

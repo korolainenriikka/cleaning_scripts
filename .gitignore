@@ -2,3 +2,4 @@
 venv/
 mlruns
 *.txt
+*.png

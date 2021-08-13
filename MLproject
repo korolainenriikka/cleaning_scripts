@@ -27,8 +27,11 @@ entry_points:
 
   calculate_statistics:
     parameters:
-      data_location: path
-    command: "python calculate_statistics.py"
+      raw_data_location: path
+      wrangled_data_location: path
+    command: "python calculate_statistics.py
+      --raw_data_location {raw_data_location}
+      --wrangled_data_location {wrangled_data_location}"
 
   main:
     command: "python3 main.py"
