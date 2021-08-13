@@ -30,3 +30,15 @@ Use script with command
 
 If using a different dataset change the `config.ini` file accordingly
 
+### On the mlflow workflow
+
+### Run the workflow
+
+* Run this mlflow workflow by running `mlflow run .` in the project root
+* In order to see the logs made by MLflow in the UI, run `mlflow ui` in the path where the `mlruns` directory is located (it is created to the location where `mlflow run` is executed)
+    * to see individual workflow steps in the ui, click the + icon next to the full workflow run.   
+
+### What does ... do/mean?
+
+* click is used to parse options given to each steps' `mlflow run` command (in MLProject file). This may or may not be the best library for this use, MLflow used it in their multistep example
+* the return value of `run_step` in `main.py` is used to locate artifacts stored in previous step to read them in the next one. This data passing to another step could also be implemented by eg. passing a database uri as a param.
