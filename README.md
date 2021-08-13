@@ -30,7 +30,7 @@ Use script with command
 
 If using a different dataset change the `config.ini` file accordingly
 
-### On the mlflow workflow
+## On the MLflow workflow
 
 ### Run the workflow
 
