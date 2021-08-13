@@ -17,11 +17,14 @@ def load_dataset(filepath, id_column, lon_column, lat_column, time_column):
         df = pd.read_csv(filepath)
         original_length = len(df)
         logging.info("+++ ORIGINAL LENGTH: " + str(original_length) + "+++\n")
+        mlflow.log_metric('original length', original_length)
 
         logging.info("+++ DROPPING ID/TIME DUPLICATES +++")
         df = df.drop_duplicates([time_column, id_column])
         prev_len = len(df)
-        logging.info("+++ ROWS DROPPED: " + str(original_length-prev_len) + "+++\n")
+        dropped_rows = original_length - prev_len
+        logging.info("+++ ROWS DROPPED: " + str(dropped_rows) + "+++\n")
+        mlflow.log_metric('count of id/time duplicates', dropped_rows)
         
         # Standardise column names
         df = df.rename(columns={id_column:'id', lon_column: 'lon', lat_column: 'lat', time_column:'t'})
@@ -30,7 +33,9 @@ def load_dataset(filepath, id_column, lon_column, lat_column, time_column):
         logging.info("+++ DROPPING ROWS WHERE COORDINATES ARE MISSING +++")
         prev_len = len(df)
         df = df.dropna(subset=['lon', 'lat'], how='any')
-        logging.info("+++ ROWS DROPPED:" + str(prev_len-len(df)) + "+++\n")
+        coordinates_missing_count = prev_len-len(df)
+        logging.info("+++ ROWS DROPPED:" + str(coordinates_missing_count) + "+++\n")
+        mlflow.log_metric('count of entries with missing coordinates', coordinates_missing_count)
         
         # store read data into artifacts
         df.to_csv('raw_data.csv')

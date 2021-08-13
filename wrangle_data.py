@@ -16,7 +16,10 @@ def drop_small_legs(df, leg_gap, min_rows):
     logging.info("+++ DROPPING SHIPS THAT HAVE FEWER THAN " + str(min_rows) + " MEASUREMENTS +++")
     prev_len = len(df)
     df = df[df.groupby('id')['id'].transform('size') > min_rows]
-    logging.info("+++ ROWS DROPPED: " + str(prev_len-len(df)) + " +++\n")
+
+    count_of_small_legs = prev_len-len(df)
+    logging.info("+++ ROWS DROPPED: " + str(count_of_small_legs) + " +++\n")
+    mlflow.log_metric('count of ships with less than given minimum of ' + str(min_rows) + ' measurements', count_of_small_legs)
     return df
 
 
@@ -26,7 +29,13 @@ def fix_values_func(df, max_speed, fix_values_bool):
         logging.info("+++ FIXING SPEED VALUES OUTLIERS +++")
         df.lon = np.where(df['speed']>25, np.nan, df.lon)
         df.lat = np.where(df['speed']>25, np.nan, df.lat)
-        logging.info("+++ TOTAL OF OUTLIERS: LAT-" + str(len(df[df.lat.isna()])) + " LON-" + str(len(df[df.lon.isna()])))
+
+        lat_outliers = len(df[df.lat.isna()])
+        lon_outliers = len(df[df.lon.isna()])
+        logging.info("+++ TOTAL OF OUTLIERS: LAT-" + str(lat_outliers) + " LON-" + str(lon_outliers))
+        mlflow.log_metric('speed value outliers / latitude', lat_outliers)
+        mlflow.log_metric('speed value outliers / longtitude', lon_outliers)
+
         rolling_averages_lat = ship_legs.lat.rolling(10, min_periods=1, center=True).mean()
         rolling_averages_lon = ship_legs.lon.rolling(10, min_periods=1, center=True).mean()
         df.lat.fillna(rolling_averages_lat.reset_index(level=0)['lat'])
