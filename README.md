@@ -32,6 +32,8 @@ If using a different dataset change the `config.ini` file accordingly
 
 ## On the MLflow workflow
 
+The workflow is implemented using conda environments.
+
 ### Run the workflow
 
 * Run this mlflow workflow by running `mlflow run .` in the project root
